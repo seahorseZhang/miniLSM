@@ -123,4 +123,17 @@ If you want, I can:
 - Add a small CPack config for packaging.
 - Add CI workflow to run tests with ASAN and valgrind.
 
+## Visualizer
+
+An interactive visualizer executable `skiplist_viz` is available after building. Example command script is at `tools/example_commands.txt` and the visualizer writes a DOT file to `build/src/example.dot` when run with that script.
+
+Build and run the visualizer via CMake:
+
+```bash
+cmake --build build --target skiplist_viz -j
+cmake --build build --target run-viz
+```
+
+If Graphviz `dot` is installed on the system, `run-viz` will also automatically convert the DOT file to `build/src/example.png`.
+
 Tell me which you prefer.

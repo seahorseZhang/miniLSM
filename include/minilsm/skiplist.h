@@ -27,6 +27,8 @@ public:
     bool erase(const K& key);
     void clear();
     size_t size() const;
+    // Export current skiplist to Graphviz DOT format
+    std::string to_dot() const;
 
 private:
     int randomLevel();

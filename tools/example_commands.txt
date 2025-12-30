@@ -1,0 +1,4 @@
+insert key1 val1
+insert key2 val2
+insert key3 val3
+dump example.dot

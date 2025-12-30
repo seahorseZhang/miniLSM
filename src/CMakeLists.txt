@@ -28,3 +28,9 @@ install(TARGETS minilsm minilsm_debug
 
 # Install public headers
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
+
+# Tool: interactive visualizer
+add_executable(skiplist_viz ${CMAKE_SOURCE_DIR}/tools/skiplist_viz.cpp)
+target_include_directories(skiplist_viz PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(skiplist_viz PRIVATE minilsm)
+install(TARGETS skiplist_viz RUNTIME DESTINATION bin)

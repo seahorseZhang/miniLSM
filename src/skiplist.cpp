@@ -3,6 +3,9 @@
 #include <cassert>
 #include <string>
 #include <memory>
+#include <sstream>
+#include <algorithm>
+#include <string>
 
 namespace minilsm {
 
@@ -107,6 +110,61 @@ int SkipList<K,V>::randomLevel() {
     int lvl = 1;
     while (dist_(gen_) < p_ && lvl < maxLevel_) ++lvl;
     return lvl;
+}
+
+template<typename K, typename V>
+std::string SkipList<K,V>::to_dot() const {
+    std::ostringstream out;
+    out << "digraph SkipList {\n";
+    out << "  rankdir=LR;\n";
+    out << "  node [shape=record];\n";
+
+    // collect all nodes in level 0 order
+    std::vector<std::shared_ptr<Node>> nodes;
+    auto cur = head_->forward[0];
+    while (cur) {
+        nodes.push_back(cur);
+        cur = cur->forward[0];
+    }
+
+    // node definitions
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        auto &n = nodes[i];
+        out << "  node" << i << " [label=\"{" << n->key << "|" << n->value << "}\"]" << ";\n";
+    }
+
+    // head node
+    out << "  head [label=\"HEAD\", shape=box];\n";
+
+    // level edges
+    for (int lvl = maxLevel_-1; lvl >= 0; --lvl) {
+        // create invisible rank grouping per level (optional)
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            auto tgt = nodes[i]->forward.size() > (size_t)lvl ? nodes[i]->forward[lvl] : nullptr;
+            if (tgt) {
+                // find index of tgt
+                auto it = std::find_if(nodes.begin(), nodes.end(), [&](const std::shared_ptr<Node>& p){ return p.get() == tgt.get(); });
+                if (it != nodes.end()) {
+                    size_t j = std::distance(nodes.begin(), it);
+                    out << "  node" << i << " -> node" << j << " [label=\"L" << lvl << "\"];\n";
+                }
+            }
+        }
+        // head forward at this level
+        if (head_->forward.size() > 0 && head_->forward.size() > (size_t)lvl) {
+            auto h = head_->forward[lvl];
+            if (h) {
+                auto it = std::find_if(nodes.begin(), nodes.end(), [&](const std::shared_ptr<Node>& p){ return p.get() == h.get(); });
+                if (it != nodes.end()) {
+                    size_t j = std::distance(nodes.begin(), it);
+                    out << "  head -> node" << j << " [style=dashed,label=\"L" << lvl << "\"];\n";
+                }
+            }
+        }
+    }
+
+    out << "}\n";
+    return out.str();
 }
 
 // Explicit instantiations for common types so the shared library emits symbols.
