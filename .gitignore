@@ -1,0 +1,26 @@
+# Ignore build output
+/build/
+
+# Ignore third-party downloads/build (user-managed)
+/third_party/
+
+# CMake temporary files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Compiled objects and libraries
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.exe
+
+# Logs and runtime
+*.log
+
+# Editor directories
+.vscode/
+.idea/
