@@ -1,0 +1,16 @@
+# 基础配置
+Language: Cpp                  # 针对C++语言生效
+BasedOnStyle: LLVM             # 基于LLVM风格（可替换为Google/Mozilla等）
+
+# 缩进核心配置（重点）
+IndentWidth: 4                 # 基础缩进宽度设为4个空格
+UseTab: Never                  # 禁用Tab，强制使用空格
+TabWidth: 4                    # 若启用Tab，Tab对应4个空格（备用）
+ContinuationIndentWidth: 4     # 换行后（如函数参数、长表达式）的缩进宽度（也设为4）
+
+# 其他辅助配置（可选，优化格式）
+AccessModifierOffset: -4       # 类成员访问修饰符（public/private）的缩进偏移
+AlignAfterOpenBracket: Align   # 括号后换行的内容对齐
+ColumnLimit: 120               # 代码行最大字符数（超过自动换行）
+PointerAlignment: Left         # 指针/引用符号对齐方式（如int* ptr）
+SpaceBeforeParens: Never       # 函数名后括号前不加空格（如func()而非func ()）

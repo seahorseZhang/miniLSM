@@ -1,15 +1,14 @@
 // skiplist.h - declarations for SkipList
 #pragma once
-#include <vector>
-#include <random>
-#include <memory>
 #include <limits>
+#include <memory>
 #include <optional>
+#include <random>
+#include <vector>
 
 namespace minilsm {
 
-template<typename K, typename V>
-class SkipList {
+template <typename K, typename V> class SkipList {
 public:
     struct Node {
         K key;
