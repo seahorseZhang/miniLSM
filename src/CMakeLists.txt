@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 
-add_library(minilsm SHARED skiplist.cpp)
+add_library(minilsm SHARED skiplist.cpp memtable.cpp)
 target_include_directories(minilsm PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 set_target_properties(minilsm PROPERTIES OUTPUT_NAME "minilsm")
 
 ## Also provide a debug-build target that compiles the same sources
-add_library(minilsm_debug SHARED skiplist.cpp)
+add_library(minilsm_debug SHARED skiplist.cpp memtable.cpp)
 target_include_directories(minilsm_debug PUBLIC ${CMAKE_SOURCE_DIR}/include)
 set_target_properties(minilsm_debug PROPERTIES OUTPUT_NAME "minilsm_debug")
 

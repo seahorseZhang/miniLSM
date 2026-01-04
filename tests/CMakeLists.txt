@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Tests CMake: find or fallback to third_party googletest
-add_executable(test_skiplist test_skiplist.cpp)
+add_executable(test_skiplist test_skiplist.cpp test_memtable.cpp)
 
 target_include_directories(test_skiplist PRIVATE ${CMAKE_SOURCE_DIR}/include)
 

@@ -14,3 +14,9 @@ AlignAfterOpenBracket: Align   # 括号后换行的内容对齐
 ColumnLimit: 120               # 代码行最大字符数（超过自动换行）
 PointerAlignment: Left         # 指针/引用符号对齐方式（如int* ptr）
 SpaceBeforeParens: Never       # 函数名后括号前不加空格（如func()而非func ()）
+
+# 控制函数是否可以放在单行
+AllowShortFunctionsOnASingleLine: None  # 禁止短函数放在单行，包括模板函数
+
+# 控制模板声明的换行
+AlwaysBreakTemplateDeclarations: Yes  # 强制模板声明换行

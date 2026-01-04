@@ -1,5 +1,6 @@
 // skiplist.h - declarations for SkipList
 #pragma once
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -8,7 +9,8 @@
 
 namespace minilsm {
 
-template <typename K, typename V> class SkipList {
+template <typename K, typename V>
+class SkipList {
 public:
     struct Node {
         K key;
@@ -17,6 +19,7 @@ public:
         Node(int level, const K& k, const V& v);
     };
 
+    SkipList& operator=(const SkipList&) = delete;
     explicit SkipList(int maxLevel = 16, double p = 0.5);
     ~SkipList();
 
@@ -26,6 +29,15 @@ public:
     bool erase(const K& key);
     void clear();
     size_t size() const;
+    // 遍历所有元素
+    template <typename F>
+    void traverse(F&& callback) const {
+        auto current = head_->forward[0];
+        while(current) {
+            callback(current->key, current->value);
+            current = current->forward[0];
+        }
+    }
     // Export current skiplist to Graphviz DOT format
     std::string to_dot() const;
 
