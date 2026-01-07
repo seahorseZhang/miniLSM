@@ -8,7 +8,6 @@
 #include <vector>
 
 namespace minilsm {
-
 template <typename K, typename V>
 class SkipList {
 public:
@@ -29,6 +28,7 @@ public:
     bool erase(const K& key);
     void clear();
     size_t size() const;
+    size_t mem_size() const;
     // 遍历所有元素
     template <typename F>
     void traverse(F&& callback) const {
@@ -49,6 +49,7 @@ private:
     int level_;
     std::shared_ptr<Node> head_;
     size_t size_ = 0;
+    std::size_t current_mem_size_ = 0;
 
     std::random_device rd_;
     std::mt19937 gen_;

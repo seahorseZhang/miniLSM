@@ -29,16 +29,14 @@ public:
     MemTable& operator=(const MemTable&) = delete;
 
     // 核心接口
-    bool put(const K& key, const V& value, const std::string& wal_path = "./wal.log");
-    bool remove(const K& key, const std::string& wal_path = "./wal.log");
+    bool put(const K& key, const V& value);
+    bool remove(const K& key);
     std::optional<V> get(const K& key) const;
     void make_immutable();
-    bool is_full() const;
     bool is_immutable() const;
     void traverse(const std::function<void(const K&, const V&)>& callback) const;
     void clear();
     size_t size() const;
-    size_t get_mem_size() const;
 
 private:
     // 辅助函数声明
@@ -48,7 +46,6 @@ private:
     MemTableOptions options_;
     SkipList<K, V> skip_list_;
     std::atomic<bool> is_immutable_;
-    std::atomic<size_t> current_mem_size_;
 };
 
 } // namespace minilsm

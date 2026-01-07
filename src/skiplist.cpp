@@ -47,6 +47,18 @@ bool SkipList<K, V>::insert(const K& key, const V& value) {
         update[i]->forward[i] = n;
     }
     ++size_;
+
+    size_t key_size = sizeof(K);
+    size_t value_size = sizeof(V);
+
+    // 针对特殊类型的内存计算
+    if constexpr(std::is_same_v<V, std::string> || std::is_same_v<V, std::vector<char>>) {
+        value_size = n->value.size();
+    }
+    size_t node_overhead = sizeof(typename SkipList<K, V>::Node) +
+                           sizeof(std::shared_ptr<typename SkipList<K, V>::Node>) * n->forward.size();
+    current_mem_size_ += (key_size + value_size + node_overhead);
+
     return true;
 }
 
@@ -75,6 +87,7 @@ bool SkipList<K, V>::update(const K& key, const V& value) {
         x->value = value;
         return true;
     }
+    // todo update mem size
     return false;
 }
 
@@ -99,6 +112,16 @@ bool SkipList<K, V>::erase(const K& key) {
     while(level_ > 1 && head_->forward[level_ - 1] == nullptr)
         --level_;
     --size_;
+
+    // decrease skiplist size
+    size_t key_size = sizeof(K);
+    size_t value_size = sizeof(V);
+    if constexpr(std::is_same_v<V, std::string> || std::is_same_v<V, std::vector<char>>) {
+        value_size = x->value.size();
+    }
+    size_t node_overhead = sizeof(typename SkipList<K, V>::Node) +
+                           sizeof(std::shared_ptr<typename SkipList<K, V>::Node>) * x->forward.size();
+    current_mem_size_ -= (key_size + value_size + node_overhead);
     return true;
 }
 
@@ -114,6 +137,11 @@ void SkipList<K, V>::clear() {
 template <typename K, typename V>
 size_t SkipList<K, V>::size() const {
     return size_;
+}
+
+template <typename K, typename V>
+size_t SkipList<K, V>::mem_size() const {
+    return current_mem_size_;
 }
 
 // traverse方法的实现已移至头文件中，因为它是模板函数
