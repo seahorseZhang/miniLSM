@@ -8,66 +8,61 @@ namespace minilsm {
 // 构造函数
 template <typename K, typename V>
 MemTable<K, V>::MemTable(const MemTableOptions& options)
-    : options_(options), skip_list_(options.skip_list_max_level, options.skip_list_p), is_immutable_(false) {
+    : options_(options),
+      cur_skip_list_(std::make_unique<SkipList<K, V>>(options.skip_list_max_level, options.skip_list_p)) {
 }
 
 // 写入数据
 template <typename K, typename V>
 bool MemTable<K, V>::put(const K& key, const V& value) {
-    bool ok = skip_list_.insert(key, value);
-    if(ok) {
+    cur_lock_.lock();
+    bool ok = cur_skip_list_->insert(key, value);
+    if(!ok) {
+        cur_lock_.unlock();
+        return false;
     }
-    return ok;
+    if(cur_skip_list_->size() > options_.table_max_mem_size) {
+        frozen_lock_.lock();
+        frozen_skip_list_.push_back(std::move(cur_skip_list_));
+        if(frozen_skip_list_.size() > options_.max_table_num) {
+            frozen_lock_.unlock();
+            cur_lock_.unlock();
+            // todo wait bg
+        }
+        cur_skip_list_ = std::make_unique<SkipList<K, V>>(options_.skip_list_max_level, options_.skip_list_p);
+    }
+    cur_lock_.unlock();
+    return true;
 }
 
 // 删除数据
 template <typename K, typename V>
 bool MemTable<K, V>::remove(const K& key) {
-    if(is_immutable_) {
-        return false;
-    }
-
-    bool ok = skip_list_.erase(key);
-    if(ok) {
-        // 减去删除的键值对占用的内存
-    }
-    return ok;
+    return true;
 }
 
 // 查找数据
 template <typename K, typename V>
 std::optional<V> MemTable<K, V>::get(const K& key) const {
-    return skip_list_.find(key);
-}
-
-// 转为只读
-template <typename K, typename V>
-void MemTable<K, V>::make_immutable() {
-    is_immutable_ = true;
-}
-
-// 判断是否只读
-template <typename K, typename V>
-bool MemTable<K, V>::is_immutable() const {
-    return is_immutable_;
+    return cur_skip_list_->find(key);
 }
 
 // 遍历所有数据
 template <typename K, typename V>
 void MemTable<K, V>::traverse(const std::function<void(const K&, const V&)>& callback) const {
-    skip_list_.traverse(callback);
+    cur_skip_list_->traverse(callback);
 }
 
 // 清空
 template <typename K, typename V>
 void MemTable<K, V>::clear() {
-    skip_list_.clear();
+    cur_skip_list_->clear();
 }
 
 // 获取大小
 template <typename K, typename V>
 size_t MemTable<K, V>::size() const {
-    return skip_list_.size();
+    return cur_skip_list_->size();
 }
 
 // 显式实例化常见类型的MemTable

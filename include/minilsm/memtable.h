@@ -4,17 +4,17 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <string>
 
 namespace minilsm {
 
-
-
 // MemTable配置
 struct MemTableOptions {
-    size_t max_mem_size = 4 * 1024 * 1024; // 默认4MB
-    int skip_list_max_level = 16;
+    size_t table_max_mem_size = 4 * 1024 * 1024; // 默认4MB
+    size_t max_table_num = 3;                    // cur + frozen skiplist最大个数
+    int skip_list_max_level = 12;
     double skip_list_p = 0.5;
 };
 
@@ -44,8 +44,10 @@ private:
 
     // 成员变量
     MemTableOptions options_;
-    SkipList<K, V> skip_list_;
-    std::atomic<bool> is_immutable_;
+    std::unique_ptr<SkipList<K, V>> cur_skip_list_;
+    std::mutex cur_lock_;
+    std::vector<std::unique_ptr<SkipList<K, V>>> frozen_skip_list_;
+    std::mutex frozen_lock_;
 };
 
 } // namespace minilsm

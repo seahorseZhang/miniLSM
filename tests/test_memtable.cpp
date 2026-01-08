@@ -12,7 +12,7 @@ protected:
     void SetUp() override {
         // 创建一个较小的MemTable用于测试内存限制
         MemTableOptions options;
-        options.max_mem_size = 1024; // 1KB
+        options.table_max_mem_size = 1024; // 1KB
         mem_table_ = std::make_unique<MemTable<int, std::string>>(options);
     }
 
