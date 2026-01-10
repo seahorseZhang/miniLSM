@@ -53,30 +53,6 @@ TEST_F(MemTableTest, BasicCRUDOperations) {
     EXPECT_FALSE(mem_table_->remove(999));
 }
 
-// 测试内存限制功能
-TEST_F(MemTableTest, MemoryLimit) {
-    
-}
-
-// 测试Immutable状态
-TEST_F(MemTableTest, ImmutableState) {
-    mem_table_->put(1, "value1");
-    EXPECT_FALSE(mem_table_->is_immutable());
-
-    // 转换为不可变状态
-    mem_table_->make_immutable();
-    EXPECT_TRUE(mem_table_->is_immutable());
-
-    // 在不可变状态下，修改操作应该失败
-    EXPECT_FALSE(mem_table_->put(2, "value2"));
-    EXPECT_FALSE(mem_table_->remove(1));
-
-    // 读取操作仍然应该正常工作
-    auto value = mem_table_->get(1);
-    ASSERT_TRUE(value.has_value());
-    EXPECT_EQ(value.value(), "value1");
-}
-
 // 测试遍历功能
 TEST_F(MemTableTest, TraverseFunctionality) {
     mem_table_->put(1, "value1");

@@ -32,8 +32,6 @@ public:
     bool put(const K& key, const V& value);
     bool remove(const K& key);
     std::optional<V> get(const K& key) const;
-    void make_immutable();
-    bool is_immutable() const;
     void traverse(const std::function<void(const K&, const V&)>& callback) const;
     void clear();
     size_t size() const;
