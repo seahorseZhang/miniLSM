@@ -44,7 +44,7 @@ done
 
 # 1. 核心修改：根据 FORMAT 设置 CMAKE_BUILD_TYPE
 if [ "${FORMAT}" = "debug" ]; then
-  TARGET=minilsm_debug
+  TARGET=minilsm
   CMAKE_BUILD_TYPE="Debug"  # Debug模式：带符号表、-O0
 elif [ "${FORMAT}" = "release" ]; then
   TARGET=minilsm

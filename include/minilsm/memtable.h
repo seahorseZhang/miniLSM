@@ -1,5 +1,6 @@
 #pragma once
 
+#include "internal_key.h"
 #include "skiplist.h"
 #include <atomic>
 #include <cstdint>
@@ -18,7 +19,8 @@ struct MemTableOptions {
     double skip_list_p = 0.5;
 };
 
-template <typename K, typename V>
+typedef SkipList<Slice, Slice> MemTableSkipList;
+
 class MemTable {
 public:
     explicit MemTable(const MemTableOptions& options = MemTableOptions());
@@ -29,22 +31,24 @@ public:
     MemTable& operator=(const MemTable&) = delete;
 
     // 核心接口
-    bool put(const K& key, const V& value);
-    bool remove(const K& key);
-    std::optional<V> get(const K& key) const;
-    void traverse(const std::function<void(const K&, const V&)>& callback) const;
+    bool put(const Slice& key, const Slice& value);
+    bool remove(const Slice& key);
+    std::optional<Slice> get(const Slice& key);
+    void traverse(const std::function<void(const Slice&, const Slice&)>& callback) const;
     void clear();
     size_t size() const;
 
 private:
     // 辅助函数声明
-    void write_wal(const std::string& path, const K& key, const V& value);
+    void write_wal(const std::string& path, const Slice& key, const Slice& value);
+    bool insert_table(const Slice& key, const Slice& value, EntryType type);
 
     // 成员变量
+    InternalKeyComparator cmp_;
     MemTableOptions options_;
-    std::unique_ptr<SkipList<K, V>> cur_skip_list_;
+    std::unique_ptr<MemTableSkipList> cur_skip_list_;
     std::mutex cur_lock_;
-    std::vector<std::unique_ptr<SkipList<K, V>>> frozen_skip_list_;
+    std::vector<std::unique_ptr<MemTableSkipList>> frozen_skip_list_;
     std::mutex frozen_lock_;
 };
 

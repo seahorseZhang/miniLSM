@@ -1,5 +1,6 @@
 // skiplist.h - SkipList implementation
 #pragma once
+#include "comparator.h"
 #include <functional>
 #include <limits>
 #include <memory>
@@ -21,8 +22,8 @@ public:
     };
 
     SkipList& operator=(const SkipList&) = delete;
-    explicit SkipList(int maxLevel = 12, double p = 0.5)
-        : maxLevel_(maxLevel), p_(p), level_(1), gen_(rd_()), dist_(0.0, 1.0) {
+    explicit SkipList(Comparator<K>* cmp, int maxLevel = 12, double p = 0.5)
+        : maxLevel_(maxLevel), p_(p), level_(1), gen_(rd_()), dist_(0.0, 1.0), cmp_(cmp) {
         head_ = std::make_shared<Node>(maxLevel_, K{}, V{});
     }
 
@@ -34,12 +35,12 @@ public:
         std::vector<std::shared_ptr<Node>> update(maxLevel_, nullptr);
         std::shared_ptr<Node> x = head_;
         for(int i = level_ - 1; i >= 0; --i) {
-            while(x->forward[i] && x->forward[i]->key < key)
+            while(x->forward[i] && cmp_->Compare(x->forward[i]->key, key) < 0)
                 x = x->forward[i];
             update[i] = x;
         }
         x = x->forward[0];
-        if(x && x->key == key)
+        if(x && cmp_->Compare(x->key, key) == 0)
             return false; // already exists
         int lvl = randomLevel();
         if(lvl > level_) {
@@ -70,11 +71,11 @@ public:
     std::optional<V> find(const K& key) const {
         std::shared_ptr<Node> x = head_;
         for(int i = level_ - 1; i >= 0; --i) {
-            while(x->forward[i] && x->forward[i]->key < key)
+            while(x->forward[i] && cmp_->Compare(x->forward[i]->key, key) < 0)
                 x = x->forward[i];
         }
         x = x->forward[0];
-        if(x && x->key == key)
+        if(x && cmp_->Compare(x->key, key) == 0)
             return x->value;
         return std::nullopt;
     }
@@ -83,11 +84,11 @@ public:
 
         std::shared_ptr<Node> x = head_;
         for(int i = level_ - 1; i >= 0; --i) {
-            while(x->forward[i] && x->forward[i]->key < key)
+            while(x->forward[i] && cmp_->Compare(x->forward[i]->key, key) < 0)
                 x = x->forward[i];
         }
         x = x->forward[0];
-        if(x && x->key == key) {
+        if(x && cmp_->Compare(x->key, key) == 0) {
             x->value = value;
             return true;
         }
@@ -100,15 +101,15 @@ public:
             std::vector<std::shared_ptr<Node>> update(maxLevel_, nullptr);
             std::shared_ptr<Node> x = head_;
             for(int i = level_ - 1; i >= 0; --i) {
-                while(x->forward[i] && x->forward[i]->key < key)
+                while(x->forward[i] && cmp_->Compare(x->forward[i]->key, key) < 0)
                     x = x->forward[i];
                 update[i] = x;
             }
             x = x->forward[0];
-            if(!x || x->key != key)
+            if(!x || cmp_->Compare(x->key, key) != 0)
                 return false;
             for(int i = 0; i < level_; ++i) {
-                if(update[i]->forward[i] != x)
+                if(cmp_->Compare(update[i]->forward[i]->key, key) != 0)
                     break;
                 update[i]->forward[i] = x->forward[i];
             }
@@ -233,6 +234,7 @@ private:
     std::random_device rd_;
     std::mt19937 gen_;
     std::uniform_real_distribution<double> dist_;
+    const Comparator<K>* cmp_;
 };
 
 } // namespace minilsm

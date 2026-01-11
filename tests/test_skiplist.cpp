@@ -3,8 +3,31 @@
 
 using namespace minilsm;
 
+class IntComparator : public Comparator<int> {
+public:
+    int Compare(const int& a, const int& b) const override {
+        return a - b;
+    }
+
+    const char* Name() const override {
+        return "minilsm.IntComparator";
+    }
+};
+
+class StringComparator : public Comparator<std::string> {
+public:
+    int Compare(const std::string& a, const std::string& b) const override {
+        return a.compare(b);
+    }
+
+    const char* Name() const override {
+        return "minilsm.StringComparator";
+    }
+};
+
 TEST(SkipListCreate, Insert) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
     EXPECT_EQ(sl.size(), 0u);
     EXPECT_TRUE(sl.insert(1, 10));
     EXPECT_TRUE(sl.insert(2, 20));
@@ -14,7 +37,8 @@ TEST(SkipListCreate, Insert) {
 }
 
 TEST(SkipListRead, Find) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
     sl.insert(5, 50);
     sl.insert(10, 100);
 
@@ -31,7 +55,8 @@ TEST(SkipListRead, Find) {
 }
 
 TEST(SkipListUpdate, Update) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
     sl.insert(3, 30);
     EXPECT_TRUE(sl.update(3, 300));
     auto v = sl.find(3);
@@ -43,7 +68,8 @@ TEST(SkipListUpdate, Update) {
 }
 
 TEST(SkipListDelete, Erase) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
     for(int i = 0; i < 5; ++i)
         sl.insert(i, i * 10);
     EXPECT_EQ(sl.size(), 5u);
@@ -57,7 +83,8 @@ TEST(SkipListDelete, Erase) {
 }
 
 TEST(SkipListCombined, FullWorkflow) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
 
     // Create
     for(int i = 0; i < 20; ++i)
@@ -91,7 +118,8 @@ TEST(SkipListCombined, FullWorkflow) {
 }
 
 TEST(SkipListBoundaryEmpty, BoundaryAndEmpty) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
     // empty find/erase
     EXPECT_FALSE(sl.find(0).has_value());
     EXPECT_FALSE(sl.erase(0));
@@ -110,14 +138,16 @@ TEST(SkipListBoundaryEmpty, BoundaryAndEmpty) {
 }
 
 TEST(SkipListTypes, StringAndBool) {
-    SkipList<std::string, std::string> sls;
+    StringComparator strcmp;
+    SkipList<std::string, std::string> sls(&strcmp);
     EXPECT_TRUE(sls.insert("a", "alpha"));
     EXPECT_TRUE(sls.insert("b", "beta"));
     auto sa = sls.find("a");
     ASSERT_TRUE(sa.has_value());
     EXPECT_EQ(sa.value(), "alpha");
 
-    SkipList<int, bool> slb;
+    IntComparator intcmp;
+    SkipList<int, bool> slb(&intcmp);
     EXPECT_TRUE(slb.insert(1, true));
     EXPECT_TRUE(slb.insert(2, false));
     auto b1 = slb.find(1);
@@ -126,7 +156,8 @@ TEST(SkipListTypes, StringAndBool) {
 }
 
 TEST(SkipListRandomized, RandomizedOpsConsistencyWithMap) {
-    SkipList<int, int> sl;
+    IntComparator cmp;
+    SkipList<int, int> sl(&cmp);
     std::map<int, int> ref;
     std::mt19937_64 rng(123456);
     std::uniform_int_distribution<int> keyd(0, 200);
