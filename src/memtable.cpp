@@ -1,5 +1,6 @@
 // MemTable模板实现
 #include "minilsm/memtable.h"
+#include "minilsm/comparator.h"
 #include "minilsm/slice.h"
 #include <fstream>
 #include <iostream>

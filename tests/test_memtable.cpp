@@ -13,7 +13,7 @@ protected:
         // 创建一个较小的MemTable用于测试内存限制
         MemTableOptions options;
         options.table_max_mem_size = 1024; // 1KB
-        mem_table_ = std::make_unique<MemTable<int, std::string>>(options);
+        mem_table_ = std::make_unique<MemTable>(options);
     }
 
     void TearDown() override {
@@ -21,55 +21,55 @@ protected:
         std::remove("./test_wal.log");
     }
 
-    std::unique_ptr<MemTable<int, std::string>> mem_table_;
+    std::unique_ptr<MemTable> mem_table_;
 };
 
 // 测试基本的CRUD功能
 TEST_F(MemTableTest, BasicCRUDOperations) {
     // Test put operation
-    EXPECT_TRUE(mem_table_->put(1, "value1"));
-    EXPECT_TRUE(mem_table_->put(2, "value2"));
-    EXPECT_TRUE(mem_table_->put(3, "value3"));
+    EXPECT_TRUE(mem_table_->put(Slice("1"), Slice("value1")));
+    EXPECT_TRUE(mem_table_->put(Slice("2"), Slice("value2")));
+    EXPECT_TRUE(mem_table_->put(Slice("3"), Slice("value3")));
     EXPECT_EQ(mem_table_->size(), 3u);
 
     // Test get operation
-    auto value1 = mem_table_->get(1);
+    auto value1 = mem_table_->get(Slice("1"));
     ASSERT_TRUE(value1.has_value());
-    EXPECT_EQ(value1.value(), "value1");
+    EXPECT_EQ(value1.value(), Slice("value1"));
 
-    auto value2 = mem_table_->get(2);
+    auto value2 = mem_table_->get(Slice("2"));
     ASSERT_TRUE(value2.has_value());
-    EXPECT_EQ(value2.value(), "value2");
+    EXPECT_EQ(value2.value(), Slice("value2"));
 
-    auto missing = mem_table_->get(999);
+    auto missing = mem_table_->get(Slice("999"));
     EXPECT_FALSE(missing.has_value());
 
     // Test remove operation
-    EXPECT_TRUE(mem_table_->remove(2));
+    EXPECT_TRUE(mem_table_->remove(Slice("2")));
     EXPECT_EQ(mem_table_->size(), 2u);
-    EXPECT_FALSE(mem_table_->get(2).has_value());
+    EXPECT_FALSE(mem_table_->get(Slice("2")).has_value());
 
     // Test remove non-existing key
-    EXPECT_FALSE(mem_table_->remove(999));
+    EXPECT_FALSE(mem_table_->remove(Slice("999")));
 }
 
 // 测试遍历功能
 TEST_F(MemTableTest, TraverseFunctionality) {
-    mem_table_->put(1, "value1");
-    mem_table_->put(2, "value2");
-    mem_table_->put(3, "value3");
+    EXPECT_TRUE(mem_table_->put(Slice("1"), Slice("value1")));
+    EXPECT_TRUE(mem_table_->put(Slice("2"), Slice("value2")));
+    EXPECT_TRUE(mem_table_->put(Slice("3"), Slice("value3")));
 
-    std::vector<std::pair<int, std::string>> results;
-    mem_table_->traverse([&results](const int& key, const std::string& value) { results.emplace_back(key, value); });
+    std::vector<std::pair<Slice, Slice>> results;
+    mem_table_->traverse([&results](const Slice& key, const Slice& value) { results.emplace_back(key, value); });
 
     // 验证遍历结果
     EXPECT_EQ(results.size(), 3u);
-    EXPECT_EQ(results[0].first, 1);
-    EXPECT_EQ(results[0].second, "value1");
-    EXPECT_EQ(results[1].first, 2);
-    EXPECT_EQ(results[1].second, "value2");
-    EXPECT_EQ(results[2].first, 3);
-    EXPECT_EQ(results[2].second, "value3");
+    EXPECT_EQ(results[0].first, Slice("1"));
+    EXPECT_EQ(results[0].second, Slice("value1"));
+    EXPECT_EQ(results[1].first, Slice("2"));
+    EXPECT_EQ(results[1].second, Slice("value2"));
+    EXPECT_EQ(results[2].first, Slice("3"));
+    EXPECT_EQ(results[2].second, Slice("value3"));
 }
 
 // 测试并发操作
@@ -83,7 +83,7 @@ TEST_F(MemTableTest, ConcurrentOperations) {
         futures.emplace_back(std::async(std::launch::async, [this, i, operations_per_thread]() {
             for(int j = 0; j < operations_per_thread; ++j) {
                 int key = i * operations_per_thread + j;
-                mem_table_->put(key, "value" + std::to_string(key));
+                mem_table_->put(Slice(std::to_string(key)), Slice("value" + std::to_string(key)));
             }
         }));
     }
@@ -104,7 +104,7 @@ TEST_F(MemTableTest, ConcurrentOperations) {
         futures.emplace_back(std::async(std::launch::async, [this, &read_count, num_threads, operations_per_thread]() {
             for(int j = 0; j < operations_per_thread; ++j) {
                 int key = j;
-                if(mem_table_->get(key).has_value()) {
+                if(mem_table_->get(Slice(std::to_string(key))).has_value()) {
                     read_count++;
                 }
             }
@@ -122,16 +122,16 @@ TEST_F(MemTableTest, ConcurrentOperations) {
 
 // 测试清空功能
 TEST_F(MemTableTest, ClearFunctionality) {
-    mem_table_->put(1, "value1");
-    mem_table_->put(2, "value2");
-    mem_table_->put(3, "value3");
+    EXPECT_TRUE(mem_table_->put(Slice("1"), Slice("value1")));
+    EXPECT_TRUE(mem_table_->put(Slice("2"), Slice("value2")));
+    EXPECT_TRUE(mem_table_->put(Slice("3"), Slice("value3")));
     EXPECT_EQ(mem_table_->size(), 3u);
 
     mem_table_->clear();
     EXPECT_EQ(mem_table_->size(), 0u);
 
     // 验证所有数据都已被清除
-    EXPECT_FALSE(mem_table_->get(1).has_value());
-    EXPECT_FALSE(mem_table_->get(2).has_value());
-    EXPECT_FALSE(mem_table_->get(3).has_value());
+    EXPECT_FALSE(mem_table_->get(Slice("1")).has_value());
+    EXPECT_FALSE(mem_table_->get(Slice("2")).has_value());
+    EXPECT_FALSE(mem_table_->get(Slice("3")).has_value());
 }

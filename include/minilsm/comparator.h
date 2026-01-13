@@ -36,7 +36,7 @@ public:
     }
 };
 
-const BytewiseComparatorImp* BytewiseComparator() {
+inline const BytewiseComparatorImp* BytewiseComparator() {
     static BytewiseComparatorImp instance;
     return &instance;
 }
