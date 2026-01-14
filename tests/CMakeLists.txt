@@ -26,6 +26,14 @@ else()
   target_link_libraries(test_skiplist PRIVATE minilsm ${GTEST_MAIN_LIBRARY} ${GTEST_LIBRARY})
 endif()
 
+target_compile_options(test_skiplist PRIVATE
+        -O0                  # 强制禁用所有优化（核心）
+        -g                   # 保留基础调试信息
+        -ggdb                # 额外 GDB 调试信息（可选，推荐）
+        -fno-omit-frame-pointer  # 保留栈帧，方便 GDB 回溯（可选）
+        -Wall -Wextra -Werror    # 通用警告（可选）
+    )
+
 # Optional: AddressSanitizer for memory leak detection
 option(ENABLE_ASAN "Enable AddressSanitizer for tests" OFF)
 if(ENABLE_ASAN)

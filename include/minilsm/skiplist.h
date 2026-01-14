@@ -40,18 +40,19 @@ public:
             update[i] = x;
         }
         x = x->forward[0];
-        if(x && cmp_->Compare(x->key, key) == 0)
+        if(x && cmp_->Compare(x->key, key) == 0) {
             return false; // already exists
-        int lvl = randomLevel();
-        if(lvl > level_) {
-            for(int i = level_; i < lvl; ++i)
-                update[i] = head_;
-            level_ = lvl;
         }
-        auto n = std::make_shared<Node>(lvl, key, value);
-        for(int i = 0; i < lvl; ++i) {
-            n->forward[i] = update[i]->forward[i];
-            update[i]->forward[i] = n;
+        int node_level = randomLevel();
+        if(node_level > level_) {
+            for(int i = level_; i < node_level; ++i)
+                update[i] = head_;
+            level_ = node_level;
+        }
+        auto new_node = std::make_shared<Node>(node_level, key, value);
+        for(int i = 0; i < node_level; ++i) {
+            new_node->forward[i] = update[i]->forward[i];
+            update[i]->forward[i] = new_node;
         }
         ++size_;
 
@@ -60,10 +61,10 @@ public:
 
         // 针对特殊类型的内存计算
         if constexpr(std::is_same_v<V, std::string> || std::is_same_v<V, std::vector<char>>) {
-            value_size = n->value.size();
+            value_size = new_node->value.size();
         }
         size_t node_overhead = sizeof(typename SkipList<K, V>::Node) +
-                               sizeof(std::shared_ptr<typename SkipList<K, V>::Node>) * n->forward.size();
+                               sizeof(std::shared_ptr<typename SkipList<K, V>::Node>) * new_node->forward.size();
         current_mem_size_ += (key_size + value_size + node_overhead);
         return true;
     }
@@ -109,7 +110,7 @@ public:
             if(!x || cmp_->Compare(x->key, key) != 0)
                 return false;
             for(int i = 0; i < level_; ++i) {
-                if(cmp_->Compare(update[i]->forward[i]->key, key) != 0)
+                if(!update[i]->forward[i] || cmp_->Compare(update[i]->forward[i]->key, key) != 0)
                     break;
                 update[i]->forward[i] = x->forward[i];
             }
