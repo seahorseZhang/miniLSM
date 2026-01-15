@@ -21,6 +21,27 @@ public:
         }
     };
 
+    class SkipListIterator {
+    public:
+        SkipListIterator(Node* node) : node_(node) {
+        }
+
+        const K& key() const {
+            return node_->key;
+        }
+
+        const V& value() const {
+            return node_->value;
+        }
+
+        bool has_value() const {
+            return node_ != nullptr;
+        }
+
+    private:
+        Node* node_;
+    };
+
     SkipList& operator=(const SkipList&) = delete;
     explicit SkipList(Comparator<K>* cmp, int maxLevel = 12, double p = 0.5)
         : maxLevel_(maxLevel), p_(p), level_(1), gen_(rd_()), dist_(0.0, 1.0), cmp_(cmp) {
@@ -69,7 +90,7 @@ public:
         return true;
     }
 
-    std::optional<V> find(const K& key) const {
+    SkipListIterator find(const K& key) const {
         std::shared_ptr<Node> x = head_;
         for(int i = level_ - 1; i >= 0; --i) {
             while(x->forward[i] && cmp_->Compare(x->forward[i]->key, key) < 0)
@@ -77,8 +98,8 @@ public:
         }
         x = x->forward[0];
         if(x && cmp_->Compare(x->key, key) == 0)
-            return x->value;
-        return std::nullopt;
+            return SkipListIterator(x.get());
+        return SkipListIterator(nullptr);
     }
 
     bool update(const K& key, const V& value) {
@@ -219,10 +240,10 @@ public:
 
 private:
     int randomLevel() {
-        int lvl = 1;
-        while(dist_(gen_) < p_ && lvl < maxLevel_)
-            ++lvl;
-        return lvl;
+        int level = 1;
+        while(dist_(gen_) < p_ && level < maxLevel_)
+            ++level;
+        return level;
     }
 
     int maxLevel_;

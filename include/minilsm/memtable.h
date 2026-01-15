@@ -20,6 +20,7 @@ struct MemTableOptions {
 };
 
 typedef SkipList<Slice, Slice> MemTableSkipList;
+typedef MemTableSkipList::SkipListIterator MemTableIterator;
 
 class MemTable {
 public:

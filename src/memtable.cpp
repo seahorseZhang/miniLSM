@@ -58,21 +58,29 @@ bool MemTable::remove(const Slice& key) {
 // 查找数据
 std::optional<Slice> MemTable::get(const Slice& key) {
     cur_lock_.lock();
-    std::optional<Slice> ret = cur_skip_list_->find(key);
+    MemTableIterator iter = cur_skip_list_->find(key);
     cur_lock_.unlock();
-    if(ret.has_value()) {
-        return ret.value();
+    if(iter.has_value()) {
+        InternalKey internal_key{};
+        bool ok = internal_key.DecodeFrom(iter.key());
+        if(!ok) {
+            return std::nullopt;
+        }
+        if(internal_key.Type() == EntryType::kDelete) {
+            return std::nullopt;
+        }
+        return iter.value();
     }
     frozen_lock_.lock();
     for(auto& frozen_skip_list : frozen_skip_list_) {
-        ret = frozen_skip_list->find(key);
-        if(ret.has_value()) {
+        MemTableIterator iter = frozen_skip_list->find(key);
+        if(iter.has_value()) {
             frozen_lock_.unlock();
-            return ret.value();
+            return iter.value();
         }
     }
     frozen_lock_.unlock();
-    return ret;
+    return std::nullopt;
 }
 
 // 遍历所有数据

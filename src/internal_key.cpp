@@ -30,7 +30,7 @@ void InternalKey::Encode(const Slice& user_key, EntryType type) {
 bool InternalKey::DecodeFrom(const Slice& slice) {
     rep_.assign(slice.data(), slice.size());
 
-    const char* suffix = rep_.data() + rep_.size() - 8;
+    const char* suffix = rep_.data() + rep_.size();
     uint64_t packed = DecodeFixed64(suffix);
     type_ = static_cast<EntryType>(packed & 0xFF);
 
