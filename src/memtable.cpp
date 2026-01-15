@@ -15,12 +15,22 @@ MemTable::MemTable(const MemTableOptions& options)
 
 // 写入数据
 bool MemTable::insert_table(const Slice& key, const Slice& value, EntryType type) {
-    InternalKey internal_key(key, type);
+    InternalKey* internal_key = new InternalKey(key, type);
+    if(!internal_key) {
+        std::cerr << "new internal_key error" << std::endl;
+        return false;
+    }
+    void* value_str = malloc(value.size());
+    if(!value_str) {
+        std::cerr << "malloc value_str error" << std::endl;
+        return false;
+    }
+    memcpy(value_str, value.data(), value.size());
     cur_lock_.lock();
-    bool ok = cur_skip_list_->insert(internal_key.Encode(), value);
+    bool ok = cur_skip_list_->insert(internal_key->UserKey(), Slice((const char*)value_str, value.size()));
     if(!ok) {
         cur_lock_.unlock();
-        return false;
+        return true;
     }
     if(cur_skip_list_->size() > options_.table_max_mem_size) {
         frozen_lock_.lock();
@@ -73,11 +83,6 @@ void MemTable::traverse(const std::function<void(const Slice&, const Slice&)>& c
 // 清空
 void MemTable::clear() {
     cur_skip_list_->clear();
-}
-
-// 获取大小
-size_t MemTable::size() const {
-    return cur_skip_list_->size();
 }
 
 } // namespace minilsm

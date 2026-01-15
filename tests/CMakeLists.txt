@@ -23,7 +23,7 @@ else()
   endif()
 
   target_include_directories(test_skiplist PRIVATE ${GTEST_INCLUDE_DIR})
-  target_link_libraries(test_skiplist PRIVATE minilsm ${GTEST_MAIN_LIBRARY} ${GTEST_LIBRARY})
+  target_link_libraries(test_skiplist PRIVATE minilsm ${GTEST_MAIN_LIBRARY} ${GTEST_LIBRARY} pthread)
 endif()
 
 target_compile_options(test_skiplist PRIVATE

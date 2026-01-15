@@ -9,7 +9,7 @@ namespace minilsm {
 // 操作类型（Put/Delete）
 enum class EntryType : uint8_t {
     kPut = 0,   // 插入操作
-    kDelete = 1 // 删除操作（墓碑）
+    kDelete = 1 // 删除操作
 };
 
 struct ParsedInternalKey {

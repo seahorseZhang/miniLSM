@@ -36,7 +36,6 @@ public:
     std::optional<Slice> get(const Slice& key);
     void traverse(const std::function<void(const Slice&, const Slice&)>& callback) const;
     void clear();
-    size_t size() const;
 
 private:
     // 辅助函数声明
