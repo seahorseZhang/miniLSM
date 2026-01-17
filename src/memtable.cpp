@@ -7,6 +7,16 @@
 #include <type_traits>
 
 namespace minilsm {
+
+std::atomic<uint64_t> last_sequence_ = 0;
+
+static const uint64_t maxSequenceNumber = ((0x1ULL << 56) - 1);
+
+uint64_t AllocateSequenceNumbers(int n) {
+    uint64_t start = last_sequence_.fetch_add(n, std::memory_order_relaxed);
+    return start + 1;
+}
+
 // 构造函数
 MemTable::MemTable(const MemTableOptions& options)
     : cmp_(InternalKeyComparator(BytewiseComparator())), options_(options),
@@ -15,19 +25,20 @@ MemTable::MemTable(const MemTableOptions& options)
 
 // 写入数据
 bool MemTable::insert_table(const Slice& key, const Slice& value, EntryType type) {
-    InternalKey* internal_key = new InternalKey(key, type);
-    if(!internal_key) {
-        std::cerr << "new internal_key error" << std::endl;
+    char* internal_key_buf = new char[key.size() + 8];
+    if(!internal_key_buf) {
+        std::cerr << "new internal_key_buf error" << std::endl;
         return false;
     }
-    void* value_str = malloc(value.size());
+    InternalKey internal_key(key, AllocateSequenceNumbers(1), type, internal_key_buf);
+    char* value_str = new char[value.size()];
     if(!value_str) {
-        std::cerr << "malloc value_str error" << std::endl;
+        std::cerr << "new value_str error" << std::endl;
         return false;
     }
     memcpy(value_str, value.data(), value.size());
     cur_lock_.lock();
-    bool ok = cur_skip_list_->insert(internal_key->UserKey(), Slice((const char*)value_str, value.size()));
+    bool ok = cur_skip_list_->insert(internal_key.Encode(), Slice((const char*)value_str, value.size()));
     if(!ok) {
         cur_lock_.unlock();
         return true;
@@ -57,8 +68,14 @@ bool MemTable::remove(const Slice& key) {
 
 // 查找数据
 std::optional<Slice> MemTable::get(const Slice& key) {
+    char* internal_key_buf = new char[key.size() + 8];
+    if(!internal_key_buf) {
+        std::cerr << "new internal_key_buf error" << std::endl;
+        return std::nullopt;
+    }
+    InternalKey internal_key(key, maxSequenceNumber, EntryType::kPut, internal_key_buf);
     cur_lock_.lock();
-    MemTableIterator iter = cur_skip_list_->find(key);
+    MemTableIterator iter = cur_skip_list_->find_greater_or_equal(internal_key.Encode());
     cur_lock_.unlock();
     if(iter.has_value()) {
         InternalKey internal_key{};
@@ -66,15 +83,23 @@ std::optional<Slice> MemTable::get(const Slice& key) {
         if(!ok) {
             return std::nullopt;
         }
-        if(internal_key.Type() == EntryType::kDelete) {
+        if(internal_key.UserKey() != key || internal_key.Type() == EntryType::kDelete) {
             return std::nullopt;
         }
         return iter.value();
     }
     frozen_lock_.lock();
     for(auto& frozen_skip_list : frozen_skip_list_) {
-        MemTableIterator iter = frozen_skip_list->find(key);
+        MemTableIterator iter = frozen_skip_list->find_greater_or_equal(internal_key.Encode());
         if(iter.has_value()) {
+            InternalKey internal_key{};
+            bool ok = internal_key.DecodeFrom(iter.key());
+            if(!ok) {
+                return std::nullopt;
+            }
+            if(internal_key.UserKey() != key || internal_key.Type() == EntryType::kDelete) {
+                return std::nullopt;
+            }
             frozen_lock_.unlock();
             return iter.value();
         }
@@ -84,8 +109,20 @@ std::optional<Slice> MemTable::get(const Slice& key) {
 }
 
 // 遍历所有数据
-void MemTable::traverse(const std::function<void(const Slice&, const Slice&)>& callback) const {
-    cur_skip_list_->traverse(callback);
+void MemTable::traverse(const std::function<void(const Slice&, const Slice&)>& callback) {
+    cur_lock_.lock();
+    for(MemTableIterator iter = cur_skip_list_->begin(); iter != cur_skip_list_->end(); ++iter) {
+        InternalKey internal_key{};
+        bool ok = internal_key.DecodeFrom(iter.key());
+        if(!ok) {
+            continue;
+        }
+        if(internal_key.Type() == EntryType::kDelete) {
+            continue;
+        }
+        callback(internal_key.UserKey(), iter.value());
+    }
+    cur_lock_.unlock();
 }
 
 // 清空

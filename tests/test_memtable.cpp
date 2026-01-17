@@ -108,7 +108,7 @@ TEST_F(MemTableTest, ConcurrentOperations) {
     }
 
     // 验证读取结果
-    EXPECT_EQ(read_count, operations_per_thread);
+    EXPECT_EQ(read_count, num_threads * operations_per_thread);
 }
 
 // 测试清空功能

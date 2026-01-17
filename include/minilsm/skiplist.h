@@ -38,6 +38,15 @@ public:
             return node_ != nullptr;
         }
 
+        SkipListIterator& operator++() {
+            node_ = node_->forward[0].get();
+            return *this;
+        }
+
+        bool operator!=(const SkipListIterator& other) const {
+            return node_ != other.node_;
+        }
+
     private:
         Node* node_;
     };
@@ -102,6 +111,16 @@ public:
         return SkipListIterator(nullptr);
     }
 
+    SkipListIterator find_greater_or_equal(const K& key) {
+        std::shared_ptr<Node> x = head_;
+        for(int i = level_ - 1; i >= 0; --i) {
+            while(x->forward[i] && cmp_->Compare(x->forward[i]->key, key) < 0)
+                x = x->forward[i];
+        }
+        x = x->forward[0];
+        return SkipListIterator(x.get());
+    }
+
     bool update(const K& key, const V& value) {
 
         std::shared_ptr<Node> x = head_;
@@ -153,6 +172,14 @@ public:
         }
     }
 
+    SkipListIterator begin() const {
+        return SkipListIterator(head_->forward[0].get());
+    }
+
+    SkipListIterator end() const {
+        return SkipListIterator(nullptr);
+    }
+
     void clear() {
         // Release all forward pointers; shared_ptr will clean up nodes
         for(int i = 0; i < maxLevel_; ++i)
@@ -167,16 +194,6 @@ public:
 
     size_t mem_size() const {
         return current_mem_size_;
-    }
-
-    // 遍历所有元素
-    template <typename F>
-    void traverse(F&& callback) const {
-        auto current = head_->forward[0];
-        while(current) {
-            callback(current->key, current->value);
-            current = current->forward[0];
-        }
     }
 
     // Export current skiplist to Graphviz DOT format

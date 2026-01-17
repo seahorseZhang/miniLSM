@@ -35,7 +35,7 @@ public:
     bool put(const Slice& key, const Slice& value);
     bool remove(const Slice& key);
     std::optional<Slice> get(const Slice& key);
-    void traverse(const std::function<void(const Slice&, const Slice&)>& callback) const;
+    void traverse(const std::function<void(const Slice&, const Slice&)>& callback);
     void clear();
 
 private:

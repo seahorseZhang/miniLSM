@@ -13,8 +13,9 @@ enum class EntryType : uint8_t {
 };
 
 struct ParsedInternalKey {
-    Slice user_key; //
-    EntryType type; //
+    Slice user_key;    //
+    uint64_t sequence; // 序列号
+    EntryType type;    //
 };
 
 // ===================== InternalKey 类 =====================
@@ -23,30 +24,36 @@ class InternalKey {
 public:
     InternalKey() = default;
 
-    InternalKey(const Slice& user_key, EntryType type) {
-        Encode(user_key, type);
+    InternalKey(const Slice& user_key, uint64_t seq, EntryType type, char* buf) {
+        Encode(user_key, seq, type, buf);
     }
 
     bool DecodeFrom(const Slice& slice);
 
     Slice Encode() const {
-        return Slice(rep_);
+        return Slice(buf_, buf_size_);
     }
 
     Slice UserKey() const {
-        return Slice(rep_.data(), rep_.size() - 8);
+        return Slice(buf_, buf_size_ - 8);
     }
 
     EntryType Type() const {
         return type_;
     }
 
-private:
-    // 格式：[user_key][type (8B)] —— 共 8 字节后缀，8字节后续可以扩展
-    void Encode(const Slice& user_key, EntryType type);
+    uint64_t Sequence() const {
+        return seq_;
+    }
 
-    std::string rep_; // serialized key + type
+private:
+    // 格式：[user_key][type (56B)][type (8B)] —— 共 16 字节后缀，8字节后续可以扩展
+    void Encode(const Slice& user_key, uint64_t seq, EntryType type, char* buf);
+
+    const char* buf_ = nullptr; // serialized key + type
+    size_t buf_size_ = 0;
     EntryType type_ = EntryType::kPut;
+    uint64_t seq_ = 0;
 };
 
 // ===================== InternalKeyComparator 类 =====================
@@ -63,8 +70,6 @@ public:
     const char* Name() const override {
         return "minilsm.InternalKeyComparator";
     }
-
-    int Compare(const ParsedInternalKey& a, const ParsedInternalKey& b) const;
 
     // 获取用户比较器
     const Comparator* user_comparator() const {
